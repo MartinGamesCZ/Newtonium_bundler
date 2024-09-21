@@ -1,0 +1,16 @@
+{
+  "name": "entrypoint",
+  "module": "entrypoint.ts",
+  "type": "module",
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/node": "^22.5.5"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@electron/asar": "^3.2.13",
+    "original-fs": "^1.2.0"
+  }
+}

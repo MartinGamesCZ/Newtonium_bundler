@@ -1,0 +1,17 @@
+{
+  "name": "@newtonium/builder",
+  "module": "src/index.ts",
+  "main": "src/index.ts",
+  "type": "module",
+  "version": "0.1.0",
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/node": "^22.5.5"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@electron/asar": "^3.2.13"
+  }
+}
