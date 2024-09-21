@@ -1,5 +1,5 @@
 {
-  "name": "@newtonium/builder",
+  "name": "@newtonium/bundler",
   "module": "src/index.ts",
   "main": "src/index.ts",
   "type": "module",
