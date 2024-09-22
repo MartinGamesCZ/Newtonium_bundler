@@ -21,6 +21,7 @@ const platforms = {
 export default async function bundle(
   root_path: string,
   platform_id?: keyof typeof platforms,
+  noLog: boolean = false,
 ) {
   const platform = platform_id
     ? platforms[platform_id]
@@ -31,18 +32,18 @@ export default async function bundle(
     process.exit(1);
   }
 
-  console.log("Bundling %s for %s...", root_path, platform_id);
+  if (!noLog) console.log("Bundling %s for %s...", root_path, platform_id);
 
   if (existsSync(path.join(root_path, "bundle")))
     rmdirSync(path.join(root_path, "bundle"), {
       recursive: true,
     });
 
-  console.log("Creating ASAR archive...");
+  if (!noLog) console.log("Creating ASAR archive...");
 
   await asar.createPackage(root_path, path.join(root_path, "bundle/app.asar"));
 
-  console.log("Copying entrypoint...");
+  if (!noLog) console.log("Copying entrypoint...");
 
   cpSync(
     path.join(__dirname, "assets/entrypoint.ts"),
@@ -54,7 +55,7 @@ export default async function bundle(
     path.join(root_path, "bundle/package.json"),
   );
 
-  console.log("Creating configuration...");
+  if (!noLog) console.log("Creating configuration...");
 
   writeFileSync(
     path.join(root_path, "bundle/config.json"),
@@ -64,20 +65,22 @@ export default async function bundle(
     }),
   );
 
-  console.log("Installing dependencies...");
+  if (!noLog) console.log("Installing dependencies...");
 
   await new Promise((r) => {
     Bun.spawn({
       cmd: ["bun", "install"],
       cwd: path.join(root_path, "bundle"),
-      stdio: ["inherit", "inherit", "inherit"],
+      stdio: noLog
+        ? ["ignore", "ignore", "ignore"]
+        : ["inherit", "inherit", "inherit"],
       onExit: r,
     });
   });
 
   await new Promise((r) => setTimeout(r, 500));
 
-  console.log("Building executable...");
+  if (!noLog) console.log("Building executable...");
 
   await new Promise((r) =>
     Bun.spawn({
@@ -92,10 +95,12 @@ export default async function bundle(
         platform.bun_target,
       ],
       cwd: path.join(root_path, "bundle"),
-      stdio: ["inherit", "inherit", "inherit"],
+      stdio: noLog
+        ? ["ignore", "ignore", "ignore"]
+        : ["inherit", "inherit", "inherit"],
       onExit: r,
     }),
   );
 
-  console.log("Done");
+  if (!noLog) console.log("Done");
 }
