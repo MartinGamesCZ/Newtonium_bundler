@@ -3,6 +3,9 @@ import path from "path";
 import { cpSync, existsSync, rmdirSync, writeFileSync } from "fs";
 import { $, readableStreamToText } from "bun";
 
+import _entrypoint from "./assets/entrypoint.template" with { type: "text" };
+import _package from "./assets/package.json" with { type: "json" };
+
 const platforms = {
   linux: {
     bun_target: "bun-linux-x64",
@@ -45,14 +48,15 @@ export default async function bundle(
 
   if (!noLog) console.log("Copying entrypoint...");
 
-  cpSync(
-    path.join(__dirname, "assets/entrypoint.ts"),
+  writeFileSync(
     path.join(root_path, "bundle/entrypoint.ts"),
+    _entrypoint,
+    "binary",
   );
 
-  cpSync(
-    path.join(__dirname, "assets/package.json"),
+  writeFileSync(
     path.join(root_path, "bundle/package.json"),
+    JSON.stringify(_package, null, 2),
   );
 
   if (!noLog) console.log("Creating configuration...");
