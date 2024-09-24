@@ -3,7 +3,10 @@
   "module": "src/index.ts",
   "main": "src/index.ts",
   "type": "module",
-  "version": "0.3.2",
+  "version": "1.0.0",
+  "scripts": {
+    "build:runner": "cd runner && cargo build --release && cp target/release/runner ../src/assets"
+  },
   "devDependencies": {
     "@types/bun": "latest",
     "@types/node": "^22.5.5"
@@ -12,6 +15,7 @@
     "typescript": "^5.0.0"
   },
   "dependencies": {
-    "@electron/asar": "^3.2.13"
+    "@electron/asar": "^3.2.13",
+    "tar": "^7.4.3"
   }
 }
