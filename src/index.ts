@@ -9,10 +9,14 @@ import {
   writeFileSync,
   readFileSync,
   rmSync,
+  createWriteStream,
+  chmodSync,
 } from "fs";
 import { $, readableStreamToText } from "bun";
 import * as tar from "tar";
 import { randomUUID } from "crypto";
+import axios from "axios";
+import yauzl from "yauzl";
 
 const platforms = {
   linux: {
@@ -23,6 +27,9 @@ const platforms = {
     assets: "linux",
     target: "x86_64-unknown-linux-gnu",
     build_output: "entrypoint",
+    bun_download:
+      "https://github.com/oven-sh/bun/releases/download/bun-v1.1.29/bun-linux-x64.zip",
+    bun_version: "1.1.29",
   },
   windows: {
     temp: "C:/Windows/Temp",
@@ -32,6 +39,9 @@ const platforms = {
     assets: "windows",
     target: "x86_64-pc-windows-msvc",
     build_output: "entrypoint.exe",
+    bun_download:
+      "https://github.com/oven-sh/bun/releases/download/bun-v1.1.29/bun-windows-x64.zip",
+    bun_version: "1.1.29",
   },
 };
 
@@ -50,6 +60,12 @@ export default async function bundle(
     process.exit(1);
   }
 
+  const temp_folder = path.join("/tmp", "newtonium_bundler");
+
+  if (!existsSync(temp_folder)) mkdirSync(temp_folder);
+  if (!existsSync(path.join(temp_folder, "binaries")))
+    mkdirSync(path.join(temp_folder, "binaries"));
+
   if (!noLog) console.log("Bundling %s for %s...", root_path, platform_id);
 
   if (existsSync(path.join(root_path, "bundle")))
@@ -57,8 +73,77 @@ export default async function bundle(
       recursive: true,
     });
 
+  if (existsSync(path.join(root_path, "newtonium_binaries")))
+    rmdirSync(path.join(root_path, "newtonium_binaries"), {
+      recursive: true,
+    });
+
   mkdirSync(path.join(root_path, "bundle"));
   mkdirSync(path.join(root_path, "newtonium_binaries"));
+
+  if (
+    !existsSync(
+      path.join(
+        temp_folder,
+        "binaries",
+        `bun-${platform.target}-${platform.bun_version}.zip`,
+      ),
+    )
+  ) {
+    if (!noLog) console.log("Downloading runtime...");
+
+    const { data } = await axios.get(platform.bun_download, {
+      responseType: "arraybuffer",
+    });
+
+    writeFileSync(
+      path.join(
+        temp_folder,
+        "binaries",
+        `bun-${platform.target}-${platform.bun_version}.zip`,
+      ),
+      Buffer.from(data),
+    );
+  }
+
+  if (!noLog) console.log("Extracting runtime...");
+
+  await new Promise((r) =>
+    yauzl.open(
+      path.join(
+        temp_folder,
+        "binaries",
+        `bun-${platform.target}-${platform.bun_version}.zip`,
+      ),
+      { lazyEntries: true },
+      function (err, zipfile) {
+        if (err) throw err;
+        zipfile.readEntry();
+        zipfile.on("entry", function (entry) {
+          if (/\/$/.test(entry.fileName)) {
+            zipfile.readEntry();
+          } else {
+            zipfile.openReadStream(entry, function (err, readStream) {
+              if (err) throw err;
+              readStream.on("end", function () {
+                zipfile.readEntry();
+              });
+              readStream.pipe(
+                createWriteStream(
+                  path.join(
+                    root_path,
+                    "newtonium_binaries",
+                    entry.fileName.split("/").slice(-1)[0],
+                  ),
+                ),
+              );
+            });
+          }
+        });
+        zipfile.on("end", r);
+      },
+    ),
+  );
 
   if (!noLog) console.log("Copying binaries...");
 
@@ -69,6 +154,14 @@ export default async function bundle(
       recursive: true,
     },
   );
+
+  if (process.platform != "win32") {
+    const binaries = readdirSync(path.join(root_path, "newtonium_binaries"));
+
+    for (const binary of binaries) {
+      chmodSync(path.join(root_path, "newtonium_binaries", binary), 0o755);
+    }
+  }
 
   if (!noLog) console.log("Creating TAR archive...");
 

@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@electron/asar": "^3.2.13",
+    "axios": "^1.7.7",
     "tar": "^7.4.3"
   }
 }
