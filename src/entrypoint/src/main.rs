@@ -1,3 +1,5 @@
+#![windows_subsystem = "windows"]
+
 use flate2::read::GzDecoder;
 use std::fs::File;
 use std::io::BufReader;
@@ -22,9 +24,11 @@ fn main() -> std::io::Result<()> {
         .env("NEWTONIUM_ROOT", "@tmpdr/@appid")
         .env("NEWTONIUM_ENTRYPOINT", "@entry")
         .env("NEWTONIUM_BUN", "@bunfl")
-        .spawn();
-
-    child?.wait().unwrap();
+        .stdin(std::process::Stdio::inherit())
+        .stdout(std::process::Stdio::inherit())
+        .stderr(std::process::Stdio::inherit())
+        .status()
+        .unwrap();
 
     Ok(())
 }

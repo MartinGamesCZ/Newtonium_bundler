@@ -1,3 +1,5 @@
+#![windows_subsystem = "windows"]
+
 fn main() -> std::io::Result<()> {
     let out = std::process::Command::new(
         std::env::var("NEWTONIUM_ROOT").unwrap()
@@ -6,10 +8,11 @@ fn main() -> std::io::Result<()> {
     )
     .arg(std::env::var("NEWTONIUM_ENTRYPOINT").unwrap())
     .current_dir(std::env::current_dir().unwrap())
-    .output()
+    .stdin(std::process::Stdio::inherit())
+    .stdout(std::process::Stdio::inherit())
+    .stderr(std::process::Stdio::inherit())
+    .status()
     .unwrap();
-
-    println!("{}", String::from_utf8_lossy(&out.stdout));
 
     Ok(())
 }
