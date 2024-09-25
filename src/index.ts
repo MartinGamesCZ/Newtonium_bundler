@@ -8,6 +8,7 @@ import {
   rmdirSync,
   writeFileSync,
   readFileSync,
+  rmSync,
 } from "fs";
 import { $, readableStreamToText } from "bun";
 import * as tar from "tar";
@@ -15,16 +16,22 @@ import { randomUUID } from "crypto";
 
 const platforms = {
   linux: {
-    bun_target: "bun-linux-x64",
-    temp: "/tmp/",
-    executable: "AppRun",
+    temp: "/tmp",
     output: "app",
+    bun: "newtonium_binaries/bun",
+    runner: "newtonium_binaries/runner",
+    assets: "linux",
+    target: "x86_64-unknown-linux-gnu",
+    build_output: "entrypoint",
   },
   windows: {
-    bun_target: "bun-windows-x64",
-    temp: "C:\\Windows\\Temp\\",
-    executable: "AppRun.exe",
+    temp: "C:/Windows/Temp",
     output: "app.exe",
+    bun: "newtonium_binaries/bun.exe",
+    runner: "newtonium_binaries/runner.exe",
+    assets: "windows",
+    target: "x86_64-pc-windows-msvc",
+    build_output: "entrypoint.exe",
   },
 };
 
@@ -51,12 +58,17 @@ export default async function bundle(
     });
 
   mkdirSync(path.join(root_path, "bundle"));
+  mkdirSync(path.join(root_path, "newtonium_binaries"));
 
   if (!noLog) console.log("Copying binaries...");
 
-  cpSync(path.join(import.meta.dirname, "assets"), path.join(root_path), {
-    recursive: true,
-  });
+  cpSync(
+    path.join(import.meta.dirname, "assets", platform.assets),
+    path.join(root_path, "newtonium_binaries"),
+    {
+      recursive: true,
+    },
+  );
 
   if (!noLog) console.log("Creating TAR archive...");
 
@@ -83,7 +95,10 @@ export default async function bundle(
     path.join(root_path, "bundle/src/main.rs"),
     readFileSync(path.join(root_path, "bundle/src/main.rs"), "utf-8")
       .replaceAll("@appid", randomUUID().replaceAll("-", ""))
-      .replaceAll("@entry", entrypoint),
+      .replaceAll("@entry", entrypoint)
+      .replaceAll("@tmpdr", platform.temp)
+      .replaceAll("@runfl", platform.runner)
+      .replaceAll("@bunfl", platform.bun),
     "utf-8",
   );
 
@@ -91,7 +106,7 @@ export default async function bundle(
 
   await new Promise((r) =>
     Bun.spawn({
-      cmd: ["cargo", "build", "--release"],
+      cmd: ["cargo", "xwin", "build", "--release", "--target", platform.target],
       cwd: path.join(root_path, "bundle"),
       stdio: noLog
         ? ["ignore", "ignore", "ignore"]
@@ -101,9 +116,20 @@ export default async function bundle(
   );
 
   cpSync(
-    path.join(root_path, "bundle/target/release/entrypoint"),
+    path.join(
+      root_path,
+      "bundle/target/" + platform.target + "/release/" + platform.build_output,
+    ),
     path.join(root_path, "bundle", platform.output),
   );
+
+  if (!noLog) console.log("Cleaning up...");
+
+  rmdirSync(path.join(root_path, "bundle/target"), { recursive: true });
+
+  rmdirSync(path.join(root_path, "newtonium_binaries"), {
+    recursive: true,
+  });
 
   if (!noLog) console.log("Done");
 }

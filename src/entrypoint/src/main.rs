@@ -6,21 +6,22 @@ use tar::Archive;
 const arch: &[u8] = include_bytes!("../app.tar.gz");
 
 fn main() -> std::io::Result<()> {
-    if (!std::path::Path::new("/tmp/@appid").exists()) {
+    if (!std::path::Path::new("@tmpdr/@appid").exists()) {
         println!("Extracting!");
 
         let buffered = BufReader::new(arch);
         let decoder = GzDecoder::new(buffered);
         let mut archive = Archive::new(decoder);
 
-        archive.unpack("/tmp/@appid")?;
+        archive.unpack("@tmpdr/@appid")?;
     }
 
-    let child = std::process::Command::new("./runner")
-        .current_dir("/tmp/@appid")
+    let child = std::process::Command::new("@tmpdr/@appid/@runfl")
+        .current_dir("@tmpdr/@appid")
         .env("NEWTONIUM_APP", "true")
-        .env("NEWTONIUM_ROOT", "/tmp/@appid")
+        .env("NEWTONIUM_ROOT", "@tmpdr/@appid")
         .env("NEWTONIUM_ENTRYPOINT", "@entry")
+        .env("NEWTONIUM_BUN", "@bunfl")
         .spawn();
 
     child?.wait().unwrap();
