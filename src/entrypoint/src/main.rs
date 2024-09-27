@@ -5,17 +5,30 @@ use std::fs::File;
 use std::io::BufReader;
 use tar::Archive;
 
-const arch: &[u8] = include_bytes!("../app.tar.gz");
+const ARCH: &[u8] = include_bytes!("../app.tar.gz");
+
+const is_installer: bool = @installer;
 
 fn main() -> std::io::Result<()> {
-    if (!std::path::Path::new("@tmpdr/@appid").exists()) {
-        println!("Extracting!");
+    if !std::path::Path::new("@tmpdr/@appid").exists() {
+        //println!("Extracting!");
 
-        let buffered = BufReader::new(arch);
+        let buffered = BufReader::new(ARCH);
         let decoder = GzDecoder::new(buffered);
         let mut archive = Archive::new(decoder);
 
         archive.unpack("@tmpdr/@appid")?;
+    }
+
+    if is_installer {
+        let child = std::process::Command::new("./newtonium_binaries/newtonium_installer").current_dir("@tmpdr/@appid")
+            .stdin(std::process::Stdio::inherit())
+            .stdout(std::process::Stdio::inherit())
+            .stderr(std::process::Stdio::inherit())
+            .status()
+            .unwrap();
+
+        return Ok(());
     }
 
     let child = std::process::Command::new("@tmpdr/@appid/@runfl")

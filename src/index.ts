@@ -48,6 +48,7 @@ const platforms = {
 export default async function bundle(
   root_path: string,
   entrypoint: string,
+  is_installer: boolean,
   platform_id?: keyof typeof platforms,
   noLog: boolean = false,
 ) {
@@ -191,7 +192,8 @@ export default async function bundle(
       .replaceAll("@entry", entrypoint)
       .replaceAll("@tmpdr", platform.temp)
       .replaceAll("@runfl", platform.runner)
-      .replaceAll("@bunfl", platform.bun),
+      .replaceAll("@bunfl", platform.bun)
+      .replaceAll("@installer", is_installer ? "true" : "false"),
     "utf-8",
   );
 
