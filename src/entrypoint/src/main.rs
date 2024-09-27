@@ -21,7 +21,7 @@ fn main() -> std::io::Result<()> {
     }
 
     if is_installer {
-        let child = std::process::Command::new("./newtonium_binaries/newtonium_installer").current_dir("@tmpdr/@appid")
+        let child = std::process::Command::new("./include/newtonium_installer").current_dir("@tmpdr/@appid")
             .stdin(std::process::Stdio::inherit())
             .stdout(std::process::Stdio::inherit())
             .stderr(std::process::Stdio::inherit())
